@@ -1,0 +1,59 @@
+﻿services:
+  bookiby.api:
+    image: bookiby-api
+    container_name: Bookiby.Api
+    build:
+      context: .
+      dockerfile: src/Bookiby.Api/Dockerfile
+    depends_on:
+      - bookiby.db
+    ports:
+      - 5000:8080
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__Database=Host=bookiby.db;Port=5432;Database=bookiby;Username=default;Password=default;
+    networks:
+      - bookiby_network
+      
+  bookiby.db:
+    image: postgres:latest
+    container_name: Bookiby.Db
+    environment:
+      POSTGRES_DB: bookiby
+      POSTGRES_USER: default # TODO change it in production
+      POSTGRES_PASSWORD: default # TODO change it in production
+    volumes:
+      - ./.containers/postgres_data:/var/lib/postgresql/data
+    ports:
+      - 5432:5432
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-U", "default" ]
+      interval: 10s
+      retries: 5
+      timeout: 5s
+    networks:
+      - bookiby_network    
+      
+  bookiby.idp:
+    image:  alwynpan/jboss-keycloak
+    container_name: Bookiby.Identity
+    environment:
+      - KEYCLOAK_USER=admin
+      - KEYCLOAK_PASSWORD=admin
+      - KEYCLOAK_IMPORT=/tmp/bookiby-realm-export.json
+    volumes:
+      - ./.containers/identity:/opt/jboss/keycloak/standalone/data
+      - ./.files/bookiby-realm-export.json:/tmp/bookiby-realm-export.json
+    ports:
+      - 18080:8080
+    networks:
+      - bookiby_network
+
+
+networks:
+  bookiby_network:
+    driver: bridge
+    
+#networks:
+#  bookiby_network:
+#    external: true
