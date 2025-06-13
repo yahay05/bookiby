@@ -2,8 +2,12 @@ using Bookiby.Api.Extensions;
 using Bookiby.Application;
 using Bookiby.Infrastructure;
 using Scalar.AspNetCore;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Host.UseSerilog(((context, configuration) =>
+    configuration.ReadFrom.Configuration(context.Configuration)));
 
 builder.Services.AddControllers();
 
@@ -25,6 +29,10 @@ if (app.Environment.IsDevelopment())
 
 
 app.UseCustomExceptionHandler();
+
+app.UseRequestContextLogging();
+
+app.UseSerilogRequestLogging();
 
 app.UseAuthentication();
 

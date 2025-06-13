@@ -45,9 +45,20 @@
       - ./.containers/identity:/opt/jboss/keycloak/standalone/data
       - ./.files/bookiby-realm-export.json:/tmp/bookiby-realm-export.json
     ports:
-      - 18080:8080
+      - "18080:8080"
     networks:
       - bookiby_network
+  
+  bookiby.seq:
+    image: datalust/seq:latest
+    container_name: Bookiby.Seq
+    environment:
+      - ACCEPT_EULA=Y
+    ports:
+      - "5341:5341"
+      - "8081:80"
+    networks:
+      - bookiby_network   
 
 
 networks:

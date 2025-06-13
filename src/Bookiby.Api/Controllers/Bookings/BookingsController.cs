@@ -1,10 +1,12 @@
 using Bookiby.Application.Bookings.GetBooking;
 using Bookiby.Application.Bookings.ReserveBooking;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Bookiby.Api.Controllers.Bookings;
 
+[Authorize]
 [ApiController]
 [Route("bookings")]
 public class BookingsController(ISender sender) : ControllerBase

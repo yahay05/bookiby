@@ -1,22 +1,18 @@
+using Bookiby.Application.Abstractions.Authentication;
 using Bookiby.Application.Abstractions.Messaging;
 using Bookiby.Application.Data;
 using Bookiby.Domain.Abstractions;
+using Bookiby.Domain.Bookings;
 using Dapper;
 
 namespace Bookiby.Application.Bookings.GetBooking;
 
-public sealed class GetBookingQueryHandler : IQueryHandler<GetBookingQuery, BookingResponse>
+public sealed class GetBookingQueryHandler(ISqlConnectionFactory sqlConnectionFactory, IUserContext userContext)
+    : IQueryHandler<GetBookingQuery, BookingResponse>
 {
-    private readonly ISqlConnectionFactory _sqlConnectionFactory;
-
-    public GetBookingQueryHandler(ISqlConnectionFactory sqlConnectionFactory)
-    {
-        _sqlConnectionFactory = sqlConnectionFactory;
-    }
-
     public async Task<Result<BookingResponse>> Handle(GetBookingQuery request, CancellationToken cancellationToken)
     {
-        using var connection = _sqlConnectionFactory.CreateConnection();
+        using var connection = sqlConnectionFactory.CreateConnection();
         const string sql = """
                            SELECT
                                id AS Id,
@@ -35,11 +31,16 @@ public sealed class GetBookingQueryHandler : IQueryHandler<GetBookingQuery, Book
                                duration_end AS DurationEnd,
                                created_on_utc AS CreatedOnUtc
                            FROM bookings 
-                           WHERE BookingId = @BookingId
+                           WHERE id = @BookingId
                            """;
         var booking = await connection.QueryFirstOrDefaultAsync<BookingResponse>(
             sql,
             new { request.BookingId });
+
+        if (booking is null || booking.UserId != userContext.UserId)
+        {
+            return Result.Failure<BookingResponse>(BookingErrors.NotFound);
+        }
         return booking;
     }
 }
