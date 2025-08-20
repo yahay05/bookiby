@@ -1,6 +1,8 @@
 using Bookiby.Api.Extensions;
 using Bookiby.Application;
 using Bookiby.Infrastructure;
+using HealthChecks.UI.Client;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Scalar.AspNetCore;
 using Serilog;
 
@@ -40,4 +42,10 @@ app.UseAuthorization();
 
 app.MapControllers();
 
+app.MapHealthChecks("health", new HealthCheckOptions
+{
+    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
+});
+
 app.Run();
+

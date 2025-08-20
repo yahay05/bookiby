@@ -1,4 +1,6 @@
+using Asp.Versioning;
 using Bookiby.Application.Abstractions.Authentication;
+using Bookiby.Application.Abstractions.Caching;
 using Bookiby.Application.Abstractions.Clock;
 using Bookiby.Application.Abstractions.Email;
 using Bookiby.Application.Data;
@@ -8,6 +10,7 @@ using Bookiby.Domain.Bookings;
 using Bookiby.Domain.Users;
 using Bookiby.Infrastructure.Authentication;
 using Bookiby.Infrastructure.Authorization;
+using Bookiby.Infrastructure.Caching;
 using Bookiby.Infrastructure.Clock;
 using Bookiby.Infrastructure.Data;
 using Bookiby.Infrastructure.Email;
@@ -38,6 +41,10 @@ public static class DependencyInjection
         AddAuthentication(services, configuration);
         
         AddAuthorization(services);
+
+        AddCaching(services, configuration);
+        
+        AddHealthChecks(services, configuration);
 
         return services;
     }
@@ -112,5 +119,31 @@ public static class DependencyInjection
         services.AddTransient<IAuthorizationHandler, PermissionAuthorizationHandler>();
 
         services.AddTransient<IAuthorizationPolicyProvider, PermissionAuthorizationPolicyProvider>();
+    }
+    
+    private static void AddCaching(IServiceCollection services, IConfiguration configuration)
+    {
+        var connectionString = configuration.GetConnectionString("Cache") ?? throw new ArgumentNullException(nameof(configuration));
+        services.AddStackExchangeRedisCache(options => options.Configuration = connectionString);
+        services.AddSingleton<ICacheService, CacheService>();
+    }
+    
+    private static void AddHealthChecks(IServiceCollection services, IConfiguration configuration)
+    {
+        services.AddHealthChecks()
+            .AddRedis(configuration.GetConnectionString("Cache")!)
+            .AddNpgSql(configuration.GetConnectionString("Database")!)
+            .AddUrlGroup(new Uri(configuration["KeyCloak:BaseUrl"]!), HttpMethod.Get, name: "keycloak");
+    }
+    
+    private static void AddApiVersioning(IServiceCollection services)
+    {
+        services
+            .AddApiVersioning(options =>
+            {
+                options.DefaultApiVersion = new ApiVersion(1);
+                options.ReportApiVersions = true;
+                options.ApiVersionReader = new UrlSegmentApiVersionReader();
+            });
     }
 }

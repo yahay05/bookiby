@@ -12,6 +12,7 @@
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__Database=Host=bookiby.db;Port=5432;Database=bookiby;Username=default;Password=default;
+      - ConnectionStrings__Cache=bookiby.redis:6379
     networks:
       - bookiby_network
       
@@ -59,7 +60,15 @@
       - "8081:80"
     networks:
       - bookiby_network   
-
+  
+  bookiby.redis:
+    image: redis:latest
+    container_name: Bookiby.Redis
+    restart: always
+    ports:
+      - '6379:6379'
+    networks:
+      - bookiby_network
 
 networks:
   bookiby_network:
